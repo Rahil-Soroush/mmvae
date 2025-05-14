@@ -15,7 +15,9 @@
 **/__pycache__
 !__init__.py
 !_imgs
-
+venv_mmvae36/
+venv_mmvae311/
+runs/
 data/
 experiments/**/
 /.bash_history

@@ -39,27 +39,63 @@ class VAE(nn.Module):
     def forward(self, x, K=1):
         self._qz_x_params = self.enc(x)
         qz_x = self.qz_x(*self._qz_x_params)
-        zs = qz_x.rsample(torch.Size([K]))
-        px_z = self.px_z(*self.dec(zs))
+        # zs = qz_x.rsample(torch.Size([K]))
+        # px_z = self.px_z(*self.dec(zs))
+        #####
+        zs = qz_x.rsample(torch.Size([K]))  # (K, B, D)
+        zs = zs.view(-1, zs.size(-1))       # (K*B, D)
+        mean, scale = self.dec(zs)          # (K*B, C, T)
+        mean = mean.view(K, -1, *mean.shape[1:])   # (K, B, C, T)
+        scale = scale.view(K, -1, *scale.shape[1:])  # same
+        px_z = self.px_z(mean, scale)  # now px_z has batch_shape (K, B, C, T)
+        #########
         return qz_x, px_z, zs
 
+    # def generate(self, N, K):
+    #     self.eval()
+    #     with torch.no_grad():
+    #         pz = self.pz(*self.pz_params)
+    #         latents = pz.rsample(torch.Size([N]))
+    #         px_z = self.px_z(*self.dec(latents))
+    #         data = px_z.sample(torch.Size([K]))
+    #     return data.view(-1, *data.size()[3:])
+    
+    ##########
     def generate(self, N, K):
         self.eval()
         with torch.no_grad():
             pz = self.pz(*self.pz_params)
-            latents = pz.rsample(torch.Size([N]))
-            px_z = self.px_z(*self.dec(latents))
-            data = px_z.sample(torch.Size([K]))
-        return data.view(-1, *data.size()[3:])
+            latents = pz.rsample(torch.Size([K, N]))  # (K, N, latent_dim)
+            latents = latents.view(-1, latents.size(-1))  # (K*N, latent_dim)
+            mean, scale = self.dec(latents)
+            mean = mean.view(K, N, *mean.shape[1:])
+            scale = scale.view(K, N, *scale.shape[1:])
+            px_z = self.px_z(mean, scale)
+            data = px_z.sample()  # (K, N, C, T)
+        return data.view(-1, *data.shape[2:])  # (K*N, C, T)
 
+    ########    
+    # def reconstruct(self, data):
+    #     self.eval()
+    #     with torch.no_grad():
+    #         qz_x = self.qz_x(*self.enc(data))
+    #         latents = qz_x.rsample()  # no dim expansion
+    #         px_z = self.px_z(*self.dec(latents))
+    #         recon = get_mean(px_z)
+    #     return recon
+    
+    ######
     def reconstruct(self, data):
         self.eval()
         with torch.no_grad():
             qz_x = self.qz_x(*self.enc(data))
-            latents = qz_x.rsample()  # no dim expansion
-            px_z = self.px_z(*self.dec(latents))
-            recon = get_mean(px_z)
+            latents = qz_x.rsample()  # (B, D)
+            mean, scale = self.dec(latents)  # (B, C, T)
+            px_z = self.px_z(mean, scale)
+            recon = get_mean(px_z)  # shape: (B, C, T)
         return recon
+
+    #########
 
     def analyse(self, data, K):
         self.eval()

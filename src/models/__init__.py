@@ -7,5 +7,7 @@ from .vae_cub_sent import CUB_Sentence as VAE_cubS
 from .vae_mnist import MNIST as VAE_mnist
 from .vae_svhn import SVHN as VAE_svhn
 
+from .lfp_gpi_stn import GPI_STN as VAE_gpi_stn
+
 __all__ = [VAE_mnist_svhn, VAE_mnist, VAE_svhn, VAE_cubIS, VAE_cubS,
-           VAE_cubI, VAE_cubISft, VAE_cubIft]
+           VAE_cubI, VAE_cubISft, VAE_cubIft, VAE_gpi_stn]

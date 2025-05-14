@@ -91,6 +91,11 @@ def m_elbo(model, x, K=1):
         kld = kl_divergence(qz_x, model.pz(*model.pz_params))
         klds.append(kld.sum(-1))
         for d in range(len(px_zs)):
+            # print("x[d].shape:", x[d].shape)
+            # print("px_zs[d][d].loc.shape:", px_zs[d][d].loc.shape)
+            # print("px_zs[d][d].scale.shape:", px_zs[d][d].scale.shape)
+
+########
             lpx_z = px_zs[d][d].log_prob(x[d]).view(*px_zs[d][d].batch_shape[:2], -1)
             lpx_z = (lpx_z * model.vaes[d].llik_scaling).sum(-1)
             if d == r:
